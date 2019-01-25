@@ -74,7 +74,7 @@ public class SchemaBlock implements Block {
 
     @Override
     public @Nullable Spacing getSpacing(@Nullable Block child1, @NotNull Block child2) {
-        if (child1 == null || !(child1 instanceof SchemaBlock) || !(child2 instanceof SchemaBlock)) {
+        if (!(child1 instanceof SchemaBlock) || !(child2 instanceof SchemaBlock)) {
             return null;
         }
         SchemaBlock left = (SchemaBlock) child1;
