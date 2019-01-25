@@ -11,7 +11,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-public class FieldTypeNode extends SchemaNode {
+public class FieldTypeNode extends SchemaNode implements StringableNode {
     private static final List<String> KEYWORD_TYPES = Arrays.asList(
             "option", "list", "map", "double", "float", "string", "bytes", "int32", "int64", "uint32", "uint64",
             "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64", "bool");
@@ -22,7 +22,7 @@ public class FieldTypeNode extends SchemaNode {
 
 
     public FieldTypeNode() {
-        this(DefaultLanguageHighlighterColors.KEYWORD);
+        this(null);
     }
 
 
@@ -38,6 +38,7 @@ public class FieldTypeNode extends SchemaNode {
         } else if(KEYWORD_TYPES.contains(this.name)) {
             holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
         }
+        super.highlight(element, holder, root);
     }
 
     public String generateName() {
@@ -58,5 +59,10 @@ public class FieldTypeNode extends SchemaNode {
             out.append(">");
         }
         return out.toString();
+    }
+
+    @Override
+    public String name() {
+        return this.name;
     }
 }

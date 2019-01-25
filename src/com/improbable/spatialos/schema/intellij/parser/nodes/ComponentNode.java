@@ -3,7 +3,7 @@ package com.improbable.spatialos.schema.intellij.parser.nodes;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComponentNode extends SchemaNode {
+public class ComponentNode extends SchemaNode implements StringableNode {
     public String name;
     public int ID;
 
@@ -14,5 +14,10 @@ public class ComponentNode extends SchemaNode {
 
     public ComponentNode() {
         super("Component");
+    }
+
+    @Override
+    public String name() {
+        return this.name;
     }
 }

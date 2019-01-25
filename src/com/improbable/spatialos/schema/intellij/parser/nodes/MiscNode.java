@@ -23,6 +23,7 @@ public class MiscNode extends SchemaNode {
     public void highlight(@NotNull PsiElement element, @NotNull AnnotationHolder holder, FileNode root) {
         if(this.attribute != null) {
             holder.createInfoAnnotation(element, null).setTextAttributes(this.attribute);
+            super.highlight(element, holder, root);
         }
     }
 }

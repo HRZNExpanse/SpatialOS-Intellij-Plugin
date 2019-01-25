@@ -17,5 +17,6 @@ public class CommandNode extends SchemaNode {
     @Override
     public void highlight(@NotNull PsiElement element, @NotNull AnnotationHolder holder, FileNode root) {
         holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.INSTANCE_METHOD);
+        super.highlight(element, holder, root);
     }
 }

@@ -27,16 +27,17 @@ public class EnumInstanceEntryNode extends ArrayEntryNode {
             int off = element.getTextOffset();
             for (int i = 0; i < names.length; i++) {
                 String clazz = names[i];
-                holder.createErrorAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(i == names.length - 1 ? DefaultLanguageHighlighterColors.STATIC_FIELD : DefaultLanguageHighlighterColors.METADATA);
+                holder.createInfoAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(i == names.length - 1 ? DefaultLanguageHighlighterColors.STATIC_FIELD : DefaultLanguageHighlighterColors.CLASS_NAME);
                 off += clazz.length() + 1;
             }
 
         } else if(node instanceof TypeNode) {
             int off = element.getTextOffset();
             for (String clazz : this.name.split("\\.")) {
-                holder.createErrorAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.METADATA);
+                holder.createInfoAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.CLASS_NAME);
                 off += clazz.length() + 1;
             }
         }
+        super.highlight(element, holder, root);
     }
 }

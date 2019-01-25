@@ -8,7 +8,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnumNode extends SchemaNode {
+public class EnumNode extends SchemaNode implements StringableNode {
 
     public String name;
     public String singleName;
@@ -18,7 +18,12 @@ public class EnumNode extends SchemaNode {
         super("Enum");
     }
 
-    public static class EnumEntryNode extends SchemaNode {
+    @Override
+    public String name() {
+        return this.name;
+    }
+
+    public static class EnumEntryNode extends SchemaNode implements StringableNode {
        public final String name;
        public int ID;
         public EnumEntryNode(String name) {
@@ -29,6 +34,12 @@ public class EnumNode extends SchemaNode {
         @Override
         public void highlight(@NotNull PsiElement element, @NotNull AnnotationHolder holder, FileNode root) {
             holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.STATIC_FIELD);
+            super.highlight(element, holder, root);
+        }
+
+        @Override
+        public String name() {
+            return this.name;
         }
     }
 }

@@ -21,6 +21,7 @@ public class PrimitiveEntryNode extends ArrayEntryNode {
     @Override
     public void highlight(@NotNull PsiElement element, @NotNull AnnotationHolder holder, FileNode root) {
         holder.createInfoAnnotation(element, null).setTextAttributes(this.type.attribute);
+        super.highlight(element, holder, root);
     }
 
     public enum AttributeType {

@@ -16,6 +16,7 @@ public class ArrayEntryNode extends SchemaNode {
 
     @Override
     public void highlight(@NotNull PsiElement element, @NotNull AnnotationHolder holder, FileNode root) {
-        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD); //todo remove
+//        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD); //todo remove
+        super.highlight(element, holder, root);
     }
 }

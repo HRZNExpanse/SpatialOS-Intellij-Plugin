@@ -25,5 +25,6 @@ public class AnnotationNode extends SchemaNode {
         } else {
             holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.METADATA);
         }
+        super.highlight(element, holder, root);
     }
 }

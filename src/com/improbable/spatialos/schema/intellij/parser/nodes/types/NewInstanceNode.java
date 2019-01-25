@@ -27,9 +27,10 @@ public class NewInstanceNode extends ArrayEntryNode {
         } else {
             int off = element.getTextOffset();
             for (String clazz : this.className.split("\\.")) {
-                holder.createErrorAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.METADATA);
+                holder.createErrorAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.CLASS_NAME);
                 off += clazz.length() + 1;
             }
         }
+        super.highlight(element, holder, root);
     }
 }
