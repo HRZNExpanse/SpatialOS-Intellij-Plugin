@@ -5,10 +5,12 @@ import com.intellij.lang.annotation.Annotator;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.tree.IElementType;
+import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -45,15 +47,23 @@ public class SchemaAnnotator implements Annotator {
     public static void highlightFieldType(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         PsiElement[] children = element.getChildren();
         if(children.length > 0) {
-            if(BUILT_IN_TYPES.contains(children[0].getText())) {
-                holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
-            } else if(BUILT_IN_GENERIC_TYPES.contains(children[0].getText())) {
-                holder.createInfoAnnotation(children[0], null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+            checkFieldTypeValid(children[0], holder);
+            if(BUILT_IN_GENERIC_TYPES.contains(children[0].getText())) {
                 for (int i = 1; i < children.length; i++) {
-                    if(BUILT_IN_TYPES.contains(children[i].getText())) {
-                        holder.createInfoAnnotation(children[i], null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
-                    }
+                    checkFieldTypeValid(children[i], holder);
                 }
+            }
+        }
+    }
+
+    public static void checkFieldTypeValid(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        if(BUILT_IN_TYPES.contains(element.getText()) || BUILT_IN_GENERIC_TYPES.contains(element.getText())) {
+            holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+        } else {
+            String text = element.getText();
+            PsiElement ref = resolveElement(element, text);
+            if(ref == null && !text.equals("EntityId")) {
+                holder.createErrorAnnotation(element, "Unable to find type " + element.getText());
             }
         }
     }
@@ -218,9 +228,9 @@ public class SchemaAnnotator implements Annotator {
                 } else if(actual.equals("map")) {
                     if(typed.trim().startsWith("{") && typed.trim().endsWith("}")) {
                         for (PsiElement field : fieldElement.getChildren()) {
-                            if(field.getChildren().length > 2) {
+                            if(field.getChildren().length > 1) {
                                 checkFieldValidity(holder, field.getChildren()[0], generics.get(0));
-                                checkFieldValidity(holder, field.getChildren()[2], generics.get(1));
+                                checkFieldValidity(holder, field.getChildren()[1], generics.get(1));
                             } else {
                                 holder.createErrorAnnotation(field, "Invalid map entry. Format should be " + generics.get(0).getText() + ":" + generics.get(1).getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
                             }
@@ -289,19 +299,14 @@ public class SchemaAnnotator implements Annotator {
     }
 
     public static PsiElement resolveElement(@NotNull PsiElement element, String elementName) {
-        //The named element might be nested name. Make the name fully qualified -- do better explanation
-        PsiElement parent = element.getParent();
-        StringBuilder elementNameBuilder = new StringBuilder(elementName);
-        while (parent != element.getContainingFile()) {
-            if(parent.getNode().getElementType() == SchemaParser.TYPE_DEFINITION) {
-                elementNameBuilder.insert(0, parent.getChildren()[1].getText() + ".");
-            }
-            parent = parent.getParent();
-        }
-        elementName = elementNameBuilder.toString();
+        return resolveElement(element, elementName, true);
+    }
+
+    public static PsiElement resolveElement(@NotNull PsiElement element, String elementName, boolean searchImports) {
         PsiElement out = null;
         String[] splitNames = elementName.split("\\.");
         PsiElement ref = element.getContainingFile();
+
         for (int i = 0; i < splitNames.length; i++) {
             if(i == splitNames.length - 2) { //Second last. This is where i can search for enums
                 for (PsiElement child : ref.getChildren()) {
@@ -324,7 +329,7 @@ public class SchemaAnnotator implements Annotator {
             if(i == splitNames.length - 1)  { //Last run, this is where i can search for enum definitions and fields
                 for (PsiElement child : ref.getChildren()) {
                     if((child.getNode().getElementType() == SchemaParser.ENUM_DEFINITION && child.getChildren()[1].getText().equals(splitNames[i])
-                    || (child.getNode().getElementType() == SchemaParser.FIELD_DEFINITION && child.getChildren()[1].getText().equals(splitNames[i])))) {
+                            || (child.getNode().getElementType() == SchemaParser.FIELD_DEFINITION && child.getChildren()[1].getText().equals(splitNames[i])))) {
                         return child;
                     }
                 }
@@ -345,6 +350,69 @@ public class SchemaAnnotator implements Annotator {
                 break;
             }
         }
+
+
+        if(out == null) { //Search nested named
+            PsiElement parent = element.getParent();
+            while (!(parent instanceof PsiFile)) {
+                if(parent.getNode().getElementType() == SchemaParser.TYPE_DEFINITION) {
+                    for (int i = 2; i < parent.getChildren().length; i++) {
+                        if(parent.getChildren()[i].getNode().getElementType() == SchemaParser.TYPE_DEFINITION) {
+                            if(parent.getChildren()[i].getChildren()[1].getText().equals(elementName))  {
+                                return parent.getChildren()[i];
+                            }
+                        }
+                    }
+                }
+                parent = parent.getParent();
+            }
+        }
+
+        if(out == null && searchImports) { //Search through other dirs
+            String path = element.getProject().getBasePath();
+            if(path != null) {
+                File base = new File(path);
+                PsiDirectory parent = element.getContainingFile().getParent();
+                while (parent != null) { //Locate the root element
+                    if(new File(parent.getVirtualFile().getPresentableUrl()).getPath().equals(base.getPath())) { //disgusting
+                        break;
+                    }
+                    parent = parent.getParent();
+                }
+                if(parent != null) {
+                    PsiDirectory folder = parent.findSubdirectory("schema");
+                    if(folder != null) {
+                        PsiDirectory reference = folder;
+                        for (PsiElement child : element.getContainingFile().getChildren()) {
+                            if(child.getNode().getElementType() == SchemaParser.IMPORT_DEFINITION) {
+                                String[] elements = child.getChildren()[1].getText().replace("\"", "").split("/");
+                                boolean donethrough = true;
+                                for (int i = 0; i < elements.length - 1; i++) {
+                                    if(reference == null) {
+                                        donethrough = false;
+                                        break;
+                                    }
+                                    reference = reference.findSubdirectory(elements[i]);
+                                }
+                                if(donethrough && reference != null) {
+                                    PsiFile file = reference.findFile(elements[elements.length - 1]);
+                                    if(file != null) {
+                                        for (PsiElement fileChild : file.getChildren()) {
+                                            if(fileChild.getNode().getElementType() == SchemaParser.PACKAGE_DEFINITION) {
+                                                String packname = fileChild.getChildren()[1].getText();
+                                                if(elementName.startsWith(packname)) {
+                                                    return resolveElement(fileChild, elementName.substring(packname.length() + 1), false);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return out;
     }
 
@@ -360,7 +428,7 @@ public class SchemaAnnotator implements Annotator {
         }
         List<PsiElement> list = new LinkedList<>();
         for (int i = 0; i < max; i++) {
-            if(elementMap.containsKey(i)) { //Should ways be true?
+            if(elementMap.containsKey(i)) { //Should always be true?
                 list.add(elementMap.get(i));
             }
         }

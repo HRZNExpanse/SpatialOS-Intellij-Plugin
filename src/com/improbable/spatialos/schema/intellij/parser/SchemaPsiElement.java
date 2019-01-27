@@ -19,7 +19,8 @@ public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIde
             SchemaParser.FIELD_NEWINSTANCE_NAME,
             SchemaParser.TYPE_NAME_REFERENCE,
             SchemaParser.FIELD_TYPE,
-            SchemaParser.FIELD_REFERNCE
+            SchemaParser.FIELD_REFERNCE,
+            SchemaParser.TYPE_PARAMETER_NAME
     );
 
     public SchemaPsiElement(@NotNull ASTNode node) {
@@ -38,11 +39,29 @@ public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIde
     @Nullable
     @Override
     public PsiElement getNameIdentifier() {
+        if(this.getNode().getElementType() == SchemaParser.FIELD_NAME) {
+            return this;
+        }
+        if(this.getNode().getElementType() == SchemaParser.DEFINITION_NAME) {
+            return this;
+        }
+        return null;
+    }
+
+    @Override
+    public String getName() {
+        if(this.getNode().getElementType() == SchemaParser.DEFINITION_NAME) {
+            return this.getText();
+        }
         return null;
     }
 
     @Override
     public PsiElement setName(@NotNull String s) throws IncorrectOperationException {
-        return null;
+        PsiElement element = this.getNameIdentifier();
+        if(element != null) {
+            return SchemaElementManipulator.rename(element, "type " + s + " {}", e -> e.getChildren()[0].getChildren()[1]);
+        }
+        return this;
     }
 }

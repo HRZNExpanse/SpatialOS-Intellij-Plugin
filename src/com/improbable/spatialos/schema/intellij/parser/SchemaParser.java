@@ -608,7 +608,7 @@ public class SchemaParser implements PsiParser {
                             error(marker, FIELD_MAP, Construct.STATEMENT, "Expected ':' in map");
                             return;
                         }
-                        consumeTokenAs(TYPE_NAME); // ':'
+                        consumeTokenAs(null); // ':'
                         parseAnnotationField();
                         entryMarker.done(FIELD_MAP_ENTRY);
 

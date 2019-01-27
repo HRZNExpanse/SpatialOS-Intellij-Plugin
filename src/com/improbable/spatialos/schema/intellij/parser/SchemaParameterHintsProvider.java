@@ -24,7 +24,7 @@ public class SchemaParameterHintsProvider implements InlayParameterHintsProvider
             if(parent.getNode().getElementType() == SchemaParser.ANNOTATION_DEFINITION || parent.getNode().getElementType() == SchemaParser.FIELD_NEWINSTANCE) {
                 PsiElement[] siblings = parent.getChildren();
                 if(siblings.length > 1) {
-                    if(siblings[0].getNode().getElementType() == (parent.getNode().getElementType() == SchemaParser.ANNOTATION_DEFINITION ? SchemaParser.TYPE_NAME : SchemaParser.FIELD_NEWINSTANCE_NAME)) {
+                    if(siblings[0].getNode().getElementType() == (parent.getNode().getElementType() == SchemaParser.ANNOTATION_DEFINITION ? SchemaParser.TYPE_NAME_REFERENCE : SchemaParser.FIELD_NEWINSTANCE_NAME)) {
                         clazzName = siblings[0].getText();
                     }
                     PsiElement[] childSiblings = siblings[1].getChildren();

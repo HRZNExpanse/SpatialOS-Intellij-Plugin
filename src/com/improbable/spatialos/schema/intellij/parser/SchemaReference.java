@@ -21,7 +21,7 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
             }
             return null;
         }
-        if(this.myElement.getNode().getElementType() == SchemaParser.TYPE_NAME_REFERENCE || this.myElement.getNode().getElementType() == SchemaParser.FIELD_TYPE) {
+        if(this.myElement.getNode().getElementType() == SchemaParser.TYPE_NAME_REFERENCE || this.myElement.getNode().getElementType() == SchemaParser.FIELD_TYPE || this.myElement.getNode().getElementType() == SchemaParser.TYPE_PARAMETER_NAME) {
             PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
             if(type != null) {
                 return type.getChildren()[1];
@@ -33,6 +33,7 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
         }
         return null;
     }
+
 
     @NotNull
     @Override
