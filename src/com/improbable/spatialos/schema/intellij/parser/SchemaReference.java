@@ -21,24 +21,14 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
             }
             return null;
         }
-        if(this.myElement.getNode().getElementType() == SchemaParser.TYPE_NAME_REFERENCE) {
+        if(this.myElement.getNode().getElementType() == SchemaParser.TYPE_NAME_REFERENCE || this.myElement.getNode().getElementType() == SchemaParser.FIELD_TYPE) {
             PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
             if(type != null) {
                 return type.getChildren()[1];
             }
             return null;
         }
-        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_TYPE) {
-            PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
-            if(type != null) {
-                return type.getChildren()[1];
-            }
-            return null;
-        }
-        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_NEWINSTANCE_NAME) {
-            return SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
-        }
-        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_ENUM_OR_INSTANCE) {
+        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_NEWINSTANCE_NAME || this.myElement.getNode().getElementType() == SchemaParser.FIELD_ENUM_OR_INSTANCE) {
             return SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
         }
         return null;
@@ -47,8 +37,6 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
     @NotNull
     @Override
     public Object[] getVariants() {
-        return new Object[] {
-                "test"
-        };
+        return new Object[0];
     }
 }

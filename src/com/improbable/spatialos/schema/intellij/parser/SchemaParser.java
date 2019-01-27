@@ -22,7 +22,6 @@ public class SchemaParser implements PsiParser {
     public static final String KEYWORD_ENUM = "enum";
     public static final String KEYWORD_TYPE = "type";
     public static final String KEYWORD_COMPONENT = "component";
-    public static final String KEYWORD_OPTION = "option";
     public static final String KEYWORD_ID = "id";
     public static final String KEYWORD_DATA = "data";
     public static final String KEYWORD_EVENT = "event";
@@ -34,10 +33,10 @@ public class SchemaParser implements PsiParser {
     public static final IElementType KEYWORD = new Node("Keyword");
     public static final IElementType DEFINITION_NAME = new Node("Definition Name");
 
-    public static final IElementType PACKAGE_DEFINITION = new PartNode("Package Definition", SchemaAnnotator::highlightPackage);
+    public static final IElementType PACKAGE_DEFINITION = new Node("Package Definition");
     public static final IElementType PACKAGE_NAME = new Node("Package Name");
 
-    public static final IElementType IMPORT_DEFINITION = new PartNode("Import Definition", SchemaAnnotator::highlightImport);
+    public static final IElementType IMPORT_DEFINITION = new Node("Import Definition");
     public static final IElementType IMPORT_FILENAME = new Node("Import Filename");
 
     public static final IElementType TYPE_NAME = new Node("Type Name");
@@ -74,19 +73,15 @@ public class SchemaParser implements PsiParser {
 
     public static final IElementType EMPTY_OPTION = new Node("Empty Option");
 
-    public static final IElementType FIELD_LIST = new PartNode("Annotation Field List", SchemaAnnotator::highlightList);
+    public static final IElementType FIELD_LIST = new Node("Annotation Field List");
 
-    public static final IElementType FIELD_MAP = new PartNode("Annotation Field Map", SchemaAnnotator::highlightMap);
+    public static final IElementType FIELD_MAP = new Node("Annotation Field Map");
     public static final IElementType FIELD_MAP_ENTRY = new Node("Field Map Entry");
 
     public static final IElementType FIELD_NEWINSTANCE = new PartNode("Annotation Field New Instance", SchemaAnnotator::highlightNewInstance);
     public static final IElementType FIELD_NEWINSTANCE_NAME = new Node("Annotation Field New Instance Name");
 
     public static final IElementType FIELD_ENUM_OR_INSTANCE = new PartNode("Annotation Field Enum Or Empty Instance", SchemaAnnotator::highlightEnumInstance);
-
-
-
-    public static final Pattern PRIMITIVE_PATTERN = Pattern.compile("(?i)(?:\\d+\\.?\\d*|true|false|\"[^\"]*\"?|_)"); //TODO: split primitives into different types.
 
 
     public static class Node extends IElementType {

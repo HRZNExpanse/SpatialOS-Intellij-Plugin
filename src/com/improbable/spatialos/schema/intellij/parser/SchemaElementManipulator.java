@@ -9,9 +9,6 @@ import org.jetbrains.annotations.Nullable;
 
 public class SchemaElementManipulator implements ElementManipulator<PsiElement> {
 
-    public SchemaElementManipulator() {
-
-    }
     @Nullable
     @Override
     public PsiElement handleContentChange(@NotNull PsiElement psiElement, @NotNull TextRange textRange, String s) throws IncorrectOperationException {

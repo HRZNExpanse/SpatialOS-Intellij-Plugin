@@ -42,14 +42,6 @@ public class SchemaAnnotator implements Annotator {
         }
     }
 
-
-    public static void highlightPackage(@NotNull PsiElement element, @NotNull AnnotationHolder holder) { //todo remove
-    }
-
-    public static void highlightImport(@NotNull PsiElement element, @NotNull AnnotationHolder holder) { //todo: remove
-
-    }
-
     public static void highlightFieldType(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         PsiElement[] children = element.getChildren();
         if(children.length > 0) {
@@ -138,14 +130,6 @@ public class SchemaAnnotator implements Annotator {
 
     public static void highlightString(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
         holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.STRING);
-    }
-
-    public static void highlightList(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-
-    }
-
-    public static void highlightMap(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-
     }
 
     public static void highlightNewInstance(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {

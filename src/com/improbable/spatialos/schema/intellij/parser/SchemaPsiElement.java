@@ -14,6 +14,14 @@ import java.util.Arrays;
 import java.util.List;
 
 public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIdentifierOwner {
+    private static final List<IElementType> accepted = Arrays.asList(
+            SchemaParser.FIELD_ENUM_OR_INSTANCE,
+            SchemaParser.FIELD_NEWINSTANCE_NAME,
+            SchemaParser.TYPE_NAME_REFERENCE,
+            SchemaParser.FIELD_TYPE,
+            SchemaParser.FIELD_REFERNCE
+    );
+
     public SchemaPsiElement(@NotNull ASTNode node) {
         super(node);
     }
@@ -21,13 +29,6 @@ public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIde
 
     @Override
     public PsiReference getReference() {
-        List<IElementType> accepted = Arrays.asList(
-                SchemaParser.FIELD_ENUM_OR_INSTANCE,
-                SchemaParser.FIELD_NEWINSTANCE_NAME,
-                SchemaParser.TYPE_NAME_REFERENCE,
-                SchemaParser.FIELD_TYPE,
-                SchemaParser.FIELD_REFERNCE
-        );//todo: move this to a field
         if(accepted.contains(this.getNode().getElementType())) {
             return new SchemaReference(this, false);
         }
