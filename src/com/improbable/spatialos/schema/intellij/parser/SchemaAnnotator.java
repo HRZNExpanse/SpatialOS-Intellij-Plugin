@@ -1,17 +1,17 @@
 package com.improbable.spatialos.schema.intellij.parser;
 
-import com.improbable.spatialos.schema.intellij.parser.nodes.FileNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.SchemaNode;
-import com.intellij.lang.ASTNode;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
-import com.intellij.openapi.editor.colors.TextAttributesKey;
+import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
+import com.intellij.openapi.editor.HighlighterColors;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class SchemaAnnotator implements Annotator {
     public static final List<String> OPTION_VALUES = Arrays.asList("true", "false");
@@ -21,65 +21,347 @@ public class SchemaAnnotator implements Annotator {
             "fixed64", "sfixed32", "sfixed64", "bool"
     );
 
+    public static final Pattern BOOL = Pattern.compile("(?i)(?:true|false)");
+    public static final Pattern INTEGER = Pattern.compile("\\d+");
+    public static final Pattern DECIMAL = Pattern.compile("\\d+\\.\\d+");
+    public static final Pattern STRING =  Pattern.compile("\".*?\"");
+
+    public static final String BOOL_ELEMENT = "bool";
+    public static final List<String> INTEGER_ELEMENTS = Arrays.asList("uint32", "uint64", "int32", "int64", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64", "EntityId");
+    public static final List<String> DECIMAL_ELEMENTS = Arrays.asList("float", "double");
+    public static final List<String> STRING_ELEMENTS = Arrays.asList("string", "bytes");
+
+
     @Override
     public void annotate(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
-        if(element.getNode().getElementType() instanceof SchemaNode) {
-            for (ASTNode child : element.getContainingFile().getNode().getChildren(null)) {
-                if(child.getElementType() instanceof FileNode) {
-                    ((SchemaNode) element.getNode().getElementType()).highlight(element, holder, (FileNode)child.getElementType());
-                    break;
+        if (element.getNode().getElementType() == SchemaParser.KEYWORD) {
+            holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+        } else {
+            if(element.getNode().getElementType() instanceof SchemaParser.PartNode) {
+                ((SchemaParser.PartNode) element.getNode().getElementType()).highlighter.accept(element, holder); // eh. Maybe should do a else if ?
+            }
+        }
+    }
+
+
+    public static void highlightPackage(@NotNull PsiElement element, @NotNull AnnotationHolder holder) { //todo remove
+    }
+
+    public static void highlightImport(@NotNull PsiElement element, @NotNull AnnotationHolder holder) { //todo: remove
+
+    }
+
+    public static void highlightFieldType(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement[] children = element.getChildren();
+        if(children.length > 0) {
+            if(BUILT_IN_TYPES.contains(children[0].getText())) {
+                holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+            } else if(BUILT_IN_GENERIC_TYPES.contains(children[0].getText())) {
+                holder.createInfoAnnotation(children[0], null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+                for (int i = 1; i < children.length; i++) {
+                    if(BUILT_IN_TYPES.contains(children[i].getText())) {
+                        holder.createInfoAnnotation(children[i], null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+                    }
                 }
             }
         }
-//        if(element.getNode().getElementType() instanceof SchemaParser.RangedNode) {
-//            for (SchemaParser.RangedNodeEntry entry : ((SchemaParser.RangedNode) element.getNode().getElementType()).entries) {
-//                highlight(holder, element, entry.attributes, entry.from, entry.to);
-//            }
-//        }
-//        if (element.getNode().getElementType() == SchemaParser.KEYWORD) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.KEYWORD);
-//        }
-//        if (element.getNode().getElementType() == SchemaParser.OPTION_VALUE &&
-//            OPTION_VALUES.contains(element.getText())) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.NUMBER);
-//        }
-//        if (element.getNode().getElementType() == SchemaParser.TYPE_NAME &&
-//            BUILT_IN_GENERIC_TYPES.contains(element.getText())) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.KEYWORD);
-//        }
-//        if (element.getNode().getElementType() == SchemaParser.TYPE_PARAMETER_NAME ||
-//             element.getNode().getElementType() == SchemaParser.TYPE_NAME) {
-//            if (BUILT_IN_TYPES.contains(element.getText())) {
-//                highlight(holder, element, DefaultLanguageHighlighterColors.KEYWORD);
-//            } else {
-//                highlight(holder, element, DefaultLanguageHighlighterColors.METADATA);
-//            }
-//        }
-//        if(element.getNode().getElementType() == SchemaParser.COMMAND_NAME) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.INSTANCE_METHOD);
-//        }
-//        if(element.getNode().getText().equals("{") || element.getNode().getText().equals("}") ||
-//           element.getNode().getText().equals("[") || element.getNode().getText().equals("]")) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.BRACKETS);
-//        }
-//        if(element.getNode().getText().equals("(") || element.getNode().getText().equals(")")) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.PARENTHESES);
-//        }
-//        if(element.getNode().getText().equals(",")) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.COMMA);
-//        }
-//        if(element.getNode().getText().equals(";")) {
-//            highlight(holder, element, DefaultLanguageHighlighterColors.SEMICOLON);
-//        }
     }
 
-    private void highlight(@NotNull AnnotationHolder holder, @NotNull PsiElement element,
-                           @NotNull TextAttributesKey attributes) {
-        holder.createInfoAnnotation(element, null).setTextAttributes(attributes);
+    public static void highlightField(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement[] children = element.getChildren();
+        if(children.length == 3) {
+            holder.createInfoAnnotation(children[1], null).setTextAttributes(DefaultLanguageHighlighterColors.INSTANCE_FIELD);
+            holder.createInfoAnnotation(children[2], null).setTextAttributes(DefaultLanguageHighlighterColors.NUMBER);
+        }
     }
 
-    private void highlight(@NotNull AnnotationHolder holder, @NotNull PsiElement element,
-                           @NotNull TextAttributesKey attributes, int start, int end) {
-        holder.createInfoAnnotation(new TextRange(element.getTextOffset() + start, element.getTextOffset() + end), null).setTextAttributes(attributes);
+    public static void highlightEnumEntry(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement[] children = element.getChildren();
+        if(children.length == 2) {
+            holder.createInfoAnnotation(children[0], null).setTextAttributes(DefaultLanguageHighlighterColors.INSTANCE_FIELD);
+            holder.createInfoAnnotation(children[1], null).setTextAttributes(DefaultLanguageHighlighterColors.NUMBER);
+        }    }
+
+    public static void highlightCommand(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement[] children = element.getChildren();
+        if(children.length == 4) {
+            holder.createInfoAnnotation(children[2], null).setTextAttributes(DefaultLanguageHighlighterColors.INSTANCE_METHOD);
+        }
     }
+
+    public static void highlightAnnotation(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement[] children = element.getChildren();
+        if(children.length > 0) {
+            holder.createInfoAnnotation(children[0], null).setTextAttributes(DefaultLanguageHighlighterColors.CLASS_REFERENCE);
+            if(children.length > 1) {
+                if(children[1].getNode().getElementType() == SchemaParser.ANNOTATION_QUALIFIER) { //Qualified Names
+                    PsiElement ref = resolveElement(element, children[0].getText());
+                    if(ref != null) {
+                        for (int i = 1; i < children.length; i++) {
+                            PsiElement[] entryChildren = children[i].getChildren();
+                            if(entryChildren.length > 1) {
+                                if(entryChildren[1].getNode().getElementType() instanceof SchemaParser.PartNode) {
+                                    ((SchemaParser.PartNode) entryChildren[1].getNode().getElementType()).highlighter.accept(entryChildren[1], holder);
+                                }
+                            }
+                            //The 3 here is used as the type definition node can have other nodes in its children, before the actual values
+                            if(ref.getChildren().length != children.length + 1) {
+                                holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + (ref.getChildren().length - 1) + " found " + (children.length)).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                            } else {
+                                PsiElement[] field = ref.getChildren()[i + 1].getChildren();
+                                if(!entryChildren[0].getText().equals(field[1].getText())) {
+                                    holder.createErrorAnnotation(entryChildren[0], "Invalid field name '" + entryChildren[0].getText() + "' found. Did you mean '" + field[1].getText() + "'?");
+                                }
+                                checkFieldValidity(holder, entryChildren[1], field[0]);
+                            }
+                        }
+                    } else {
+                        holder.createErrorAnnotation(element, "Unable to find type " + children[0].getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                    }
+                } else {
+                    highlightTypeArray(element, holder, 3);
+                }
+            }
+        }
+    }
+
+    public static void highlightInteger(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.NUMBER);
+    }
+
+    public static void highlightDouble(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.NUMBER);
+    }
+
+    public static void highlightBoolean(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.KEYWORD);
+    }
+
+    public static void highlightString(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        holder.createInfoAnnotation(element, null).setTextAttributes(DefaultLanguageHighlighterColors.STRING);
+    }
+
+    public static void highlightList(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+
+    }
+
+    public static void highlightMap(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+
+    }
+
+    public static void highlightNewInstance(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        highlightTypeArray(element, holder, 2);
+        if(element.getChildren().length > 0) {
+            int off = element.getTextOffset();
+            for (String clazz : element.getChildren()[0].getText().split("\\.")) {
+                holder.createInfoAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.CLASS_NAME);
+                off += clazz.length() + 1;
+            }
+        }
+    }
+
+    public static void highlightTypeArray(@NotNull PsiElement element, @NotNull AnnotationHolder holder, int padding) {
+        PsiElement[] children = element.getChildren();
+        if(children.length > 0) {
+            PsiElement ref = resolveElement(element, children[0].getText());
+            if(ref == null) {
+                holder.createErrorAnnotation(element, "Unable to find type " + children[0].getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+            } else {
+                if(children.length > 1) {
+                    //The 2 here is used as the type definition node can have other nodes in its children, before the actual values
+                    if(ref.getChildren().length != children[1].getChildren().length + padding) {
+                        holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + (ref.getChildren().length - padding) + " found " + (children[1].getChildren().length)).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                    } else {
+                        for (int i = 0; i < children[1].getChildren().length; i++) {
+                            checkFieldValidity(holder, children[1].getChildren()[i], ref.getChildren()[i + padding].getChildren()[0]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void checkFieldValidity(@NotNull AnnotationHolder holder, PsiElement fieldElement, PsiElement actualField) {
+
+        String type = actualField.getText();
+        String typed = fieldElement.getText();
+
+        if(BOOL_ELEMENT.equals(type)) {
+            if(!BOOL.matcher(typed).matches()) {
+                holder.createErrorAnnotation(fieldElement, "Expected true or false. Found '" + typed + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+            }
+        } else if(INTEGER_ELEMENTS.contains(type)) {
+            if(!INTEGER.matcher(typed).matches()) {
+                holder.createErrorAnnotation(fieldElement, "Expected an integer. Found '" + typed + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+            }
+        } else if(DECIMAL_ELEMENTS.contains(type)) {
+            if(!DECIMAL.matcher(typed).matches()) {
+                holder.createErrorAnnotation(fieldElement, "Expected a decimal. Found '" + typed + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+            }
+        } else if(STRING_ELEMENTS.contains(type)) {
+            if(!STRING.matcher(typed).matches()) {
+                holder.createErrorAnnotation(fieldElement, "Expected a string. Found '" + typed + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+            }
+        } else { //Not a primitive
+            String actual = type;
+            List<PsiElement> generics = new LinkedList<>();
+            if(actualField.getChildren().length > 1) { //Generics
+                actual = actualField.getChildren()[0].getText();
+                for (int gen = 1; gen < actualField.getChildren().length; gen++) {
+                    generics.add(actualField.getChildren()[gen]);
+                }
+            }
+
+            if(typed.equals("_")) {
+                if(!actual.equals("option")) {
+                    holder.createErrorAnnotation(fieldElement, "Illegal Character. Empty options are not allowed on " + type + "s");
+                }
+            } else {
+                if(actual.equals("list")) {
+                    if(typed.trim().startsWith("[") && typed.trim().endsWith("]")) {
+                        for (PsiElement field : fieldElement.getChildren()) {
+                            checkFieldValidity(holder, field, generics.get(0));
+                        }
+                    } else {
+                        if(!typed.trim().startsWith("[")) {
+                            holder.createErrorAnnotation(fieldElement, "Lists should start with '['").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                        } else if(!typed.trim().endsWith("]")) {
+                            holder.createErrorAnnotation(fieldElement, "Lists should end with ']'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                        }
+                    }
+                } else if(actual.equals("option")) {
+                    checkFieldValidity(holder, fieldElement, generics.get(0));
+                } else if(actual.equals("map")) {
+                    if(typed.trim().startsWith("{") && typed.trim().endsWith("}")) {
+                        for (PsiElement field : fieldElement.getChildren()) {
+                            if(field.getChildren().length > 2) {
+                                checkFieldValidity(holder, field.getChildren()[0], generics.get(0));
+                                checkFieldValidity(holder, field.getChildren()[2], generics.get(1));
+                            } else {
+                                holder.createErrorAnnotation(field, "Invalid map entry. Format should be " + generics.get(0).getText() + ":" + generics.get(1).getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                            }
+                        }
+                    } else {
+                        if(!typed.trim().startsWith("{")) {
+                            holder.createErrorAnnotation(fieldElement, "Maps should start with '{'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                        } else if(!typed.trim().endsWith("}")) {
+                            holder.createErrorAnnotation(fieldElement, "Maps should end with '}'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                        }
+                    }
+                } else { //An enum or new object.
+                    PsiElement element = resolveElement(actualField, actual);
+                    if(element != null) {
+                        if(element.getNode().getElementType() == SchemaParser.ENUM_DEFINITION) { //Enum
+                            PsiElement typedElement = resolveElement(fieldElement, typed);
+                            if(typedElement == null || typedElement.getNode().getElementType() != SchemaParser.ENUM_VALUE_DEFINITION) {
+                                holder.createErrorAnnotation(fieldElement, "Invalid type " + typed + ". Expected enum-type: '" + actual + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                            } else {
+                                //Enum definitions start with keyword, name
+                                boolean valid = false;
+                                for (int i = 2; i < element.getChildren().length; i++) {
+                                    if (element.getChildren()[i] == typedElement) {
+                                        valid = true;
+                                    }
+                                }
+                                if(!valid) {
+                                    holder.createErrorAnnotation(fieldElement, "Enum '" + typed + "' is not of type '" + actual + "'").setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                                }
+                            }
+                        } else { //New instance
+                            PsiElement[] children = fieldElement.getChildren();
+                            if(children.length > 0) {;
+                                if(resolveElement(fieldElement, children[0].getText()) != resolveElement(actualField, type)) {
+                                    holder.createErrorAnnotation(fieldElement, "Expected '" + actual + "' found '" + children[0].getText() + "'");
+                                }
+                            } else {
+                                holder.createErrorAnnotation(fieldElement, "Expected '" + actual + "' found '" + typed + "'");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public static void highlightEnumInstance(@NotNull PsiElement element, @NotNull AnnotationHolder holder) {
+        PsiElement ref = resolveElement(element, element.getText());
+        if(ref == null) {
+            holder.createErrorAnnotation(element, "Unable to find type/enum " + element.getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+        } else if(ref.getNode().getElementType() == SchemaParser.TYPE_DEFINITION)  {
+            int off = element.getTextOffset();
+            for (String clazz : element.getText().split("\\.")) {
+                holder.createInfoAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(DefaultLanguageHighlighterColors.CLASS_NAME);
+                off += clazz.length() + 1;
+            }
+        } else if(ref.getNode().getElementType() == SchemaParser.ENUM_VALUE_DEFINITION) {
+            String[] names = element.getText().split("\\.");
+            int off = element.getTextOffset();
+            for (int i = 0; i < names.length; i++) {
+                String clazz = names[i];
+                holder.createInfoAnnotation(new TextRange(off, off + clazz.length()), null).setTextAttributes(i == names.length - 1 ? DefaultLanguageHighlighterColors.STATIC_FIELD : DefaultLanguageHighlighterColors.CLASS_NAME);
+                off += clazz.length() + 1;
+            }
+        }
+    }
+
+    public static PsiElement resolveElement(@NotNull PsiElement element, String elementName) {
+        //The named element might be nested name. Make the name fully qualified -- do better explanation
+        PsiElement parent = element.getParent();
+        StringBuilder elementNameBuilder = new StringBuilder(elementName);
+        while (parent != element.getContainingFile()) {
+            if(parent.getNode().getElementType() == SchemaParser.TYPE_DEFINITION) {
+                elementNameBuilder.insert(0, parent.getChildren()[1].getText() + ".");
+            }
+            parent = parent.getParent();
+        }
+        elementName = elementNameBuilder.toString();
+        PsiElement out = null;
+        String[] splitNames = elementName.split("\\.");
+        PsiElement ref = element.getContainingFile();
+        for (int i = 0; i < splitNames.length; i++) {
+            if(i == splitNames.length - 2) { //Second last. This is where i can search for enums
+                for (PsiElement child : ref.getChildren()) {
+                    if(child.getNode().getElementType() == SchemaParser.ENUM_DEFINITION) {
+                        PsiElement[] grandChildren = child.getChildren();
+                        if(grandChildren.length > 1 && grandChildren[1].getText().equals(splitNames[i])) {
+                            for (PsiElement grandChild : grandChildren) {
+                                if(grandChild.getNode().getElementType() == SchemaParser.ENUM_VALUE_DEFINITION) {
+                                    PsiElement[] greatGrandChild = grandChild.getChildren();
+                                    if(greatGrandChild.length > 0 && greatGrandChild[0].getText().equals(splitNames[i + 1])) {
+                                        return grandChild;
+                                    }
+                                }
+                            }
+                            return null;
+                        }
+                    }
+                }
+            }
+            if(i == splitNames.length - 1)  { //Last run, this is where i can search for enum definitions and fields
+                for (PsiElement child : ref.getChildren()) {
+                    if((child.getNode().getElementType() == SchemaParser.ENUM_DEFINITION && child.getChildren()[1].getText().equals(splitNames[i])
+                    || (child.getNode().getElementType() == SchemaParser.FIELD_DEFINITION && child.getChildren()[1].getText().equals(splitNames[i])))) {
+                        return child;
+                    }
+                }
+            }
+            boolean found = false;
+            for (PsiElement child : ref.getChildren()) {
+                if(child.getNode().getElementType() == SchemaParser.TYPE_DEFINITION) {
+                    PsiElement[] childChildren = child.getChildren();
+                    if(childChildren.length > 1 && childChildren[1].getText().equals(splitNames[i])) {
+                        ref = out = child;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if(!found) {
+                out = null;
+                break;
+            }
+        }
+        return out;
+    }
+
 }

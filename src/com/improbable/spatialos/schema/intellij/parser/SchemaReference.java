@@ -1,17 +1,11 @@
 package com.improbable.spatialos.schema.intellij.parser;
 
-import com.improbable.spatialos.schema.intellij.parser.nodes.EnumNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.FileNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.SchemaNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.types.EnumInstanceEntryNode;
-import com.intellij.lang.ASTNode;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiReferenceBase;
-import com.intellij.psi.search.searches.ReferencesSearch;
-import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
 
 public class SchemaReference extends PsiReferenceBase<PsiElement> {
 
@@ -22,21 +16,31 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
     @Nullable
     @Override
     public PsiElement resolve() {
-        FileNode root = null;
-        for (ASTNode child : this.myElement.getContainingFile().getNode().getChildren(null)) {
-            if(child.getElementType() instanceof FileNode) {
-                root = (FileNode) child.getElementType();
+        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_REFERNCE) {
+            PsiElement type = SchemaAnnotator.resolveElement(this.myElement, this.myElement.getParent().getParent().getChildren()[0].getText() + "." + this.myElement.getText());
+            if(type != null) {
+                return type.getChildren()[1];
             }
-        }
-        if(root == null) {
             return null;
         }
-
-        IElementType type = this.myElement.getNode().getElementType();
-        if(type instanceof EnumInstanceEntryNode) {
-            SchemaNode node = root.getNode(((EnumInstanceEntryNode) type).name);
-            return node.element;
+        if(this.myElement.getNode().getElementType() == SchemaParser.ANNOTATION_TYPE_NAME) {
+            PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
+            if(type != null) {
+                return type.getChildren()[1];
+            }
+            return null;
         }
+        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_TYPE) {
+            PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
+            if(type != null) {
+                return type.getChildren()[1];
+            }
+            return null;
+        }
+        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_NEWINSTANCE_NAME) {
+            return SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
+        }
+        System.out.println(this.myElement);
         return null;
     }
 
@@ -44,7 +48,7 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
     @Override
     public Object[] getVariants() {
         return new Object[] {
-                this.resolve()
+                "test"
         };
     }
 }

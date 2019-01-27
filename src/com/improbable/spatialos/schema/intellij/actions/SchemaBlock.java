@@ -19,7 +19,7 @@ public class SchemaBlock implements Block {
     private static final List<IElementType> INDENT_BLOCKS = Arrays.asList(
         SchemaParser.ENUM_DEFINITION, SchemaParser.TYPE_DEFINITION, SchemaParser.COMPONENT_DEFINITION);
     private static final List<IElementType> CONTINUATION_BLOCKS = Arrays.asList(
-        SchemaParser.PACKAGE_DEFINITION, SchemaParser.IMPORT_DEFINITION, SchemaParser.OPTION_DEFINITION,
+        SchemaParser.PACKAGE_DEFINITION, SchemaParser.IMPORT_DEFINITION,
         SchemaParser.FIELD_DEFINITION, SchemaParser.DATA_DEFINITION, SchemaParser.EVENT_DEFINITION,
         SchemaParser.FIELD_TYPE, SchemaParser.ENUM_VALUE_DEFINITION, SchemaParser.COMPONENT_ID_DEFINITION);
 

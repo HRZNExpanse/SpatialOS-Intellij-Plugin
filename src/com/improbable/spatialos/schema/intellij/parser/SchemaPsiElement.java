@@ -1,33 +1,35 @@
 package com.improbable.spatialos.schema.intellij.parser;
 
-import com.improbable.spatialos.schema.intellij.parser.nodes.EnumNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.FileNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.StringableNode;
-import com.improbable.spatialos.schema.intellij.parser.nodes.types.EnumInstanceEntryNode;
 import com.intellij.extapi.psi.ASTWrapperPsiElement;
 import com.intellij.lang.ASTNode;
-import com.intellij.psi.ElementManipulators;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiNameIdentifierOwner;
 import com.intellij.psi.PsiReference;
+import com.intellij.psi.tree.IElementType;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.List;
+
 public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIdentifierOwner {
-    private String name = null;
     public SchemaPsiElement(@NotNull ASTNode node) {
         super(node);
-        if(node.getElementType() instanceof StringableNode) {
-            this.name = ((StringableNode) node.getElementType()).name();
-        }
     }
+
 
     @Override
     public PsiReference getReference() {
-        if(this.getNode().getElementType() instanceof EnumInstanceEntryNode) {
+        List<IElementType> accepted = Arrays.asList(
+                SchemaParser.FIELD_ENUM_OR_INSTANCE,
+                SchemaParser.FIELD_NEWINSTANCE_NAME,
+                SchemaParser.ANNOTATION_TYPE_NAME,
+                SchemaParser.FIELD_TYPE,
+                SchemaParser.FIELD_REFERNCE
+        );//todo: move this to a field
+        if(accepted.contains(this.getNode().getElementType())) {
             return new SchemaReference(this, false);
-//
         }
         return null;
     }

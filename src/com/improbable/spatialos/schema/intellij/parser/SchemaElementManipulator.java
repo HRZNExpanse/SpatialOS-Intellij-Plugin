@@ -28,6 +28,10 @@ public class SchemaElementManipulator implements ElementManipulator<PsiElement> 
     @NotNull
     @Override
     public TextRange getRangeInElement(@NotNull PsiElement psiElement) {
+        //No fucking idea why this happenes. For some reason the returned text range is shifted to the right one more than it should be. TODO: figure out why and do proper fix
+        if(psiElement.getNode().getElementType() == SchemaParser.ANNOTATION_TYPE_NAME) {
+            return psiElement.getTextRangeInParent().shiftLeft(1);
+        }
         return psiElement.getTextRangeInParent();
     }
 }
