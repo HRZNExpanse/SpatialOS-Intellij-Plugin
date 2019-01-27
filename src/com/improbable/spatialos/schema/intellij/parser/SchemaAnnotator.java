@@ -6,11 +6,10 @@ import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.PsiElement;
+import com.intellij.psi.tree.IElementType;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 public class SchemaAnnotator implements Annotator {
@@ -104,11 +103,11 @@ public class SchemaAnnotator implements Annotator {
                                     ((SchemaParser.PartNode) entryChildren[1].getNode().getElementType()).highlighter.accept(entryChildren[1], holder);
                                 }
                             }
-                            //The 3 here is used as the type definition node can have other nodes in its children, before the actual values
-                            if(ref.getChildren().length != children.length + 1) {
-                                holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + (ref.getChildren().length - 1) + " found " + (children.length)).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                            List<PsiElement> orderedFields = getOrderedFields(ref);
+                            if(orderedFields.size() != children.length - 1) {
+                                holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + orderedFields.size() + " found " + (children.length - 1)).setTextAttributes(HighlighterColors.BAD_CHARACTER);
                             } else {
-                                PsiElement[] field = ref.getChildren()[i + 1].getChildren();
+                                PsiElement[] field = orderedFields.get(i - 1).getChildren();
                                 if(!entryChildren[0].getText().equals(field[1].getText())) {
                                     holder.createErrorAnnotation(entryChildren[0], "Invalid field name '" + entryChildren[0].getText() + "' found. Did you mean '" + field[1].getText() + "'?");
                                 }
@@ -119,7 +118,7 @@ public class SchemaAnnotator implements Annotator {
                         holder.createErrorAnnotation(element, "Unable to find type " + children[0].getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
                     }
                 } else {
-                    highlightTypeArray(element, holder, 3);
+                    highlightTypeArray(element, holder, 2);
                 }
             }
         }
@@ -169,11 +168,12 @@ public class SchemaAnnotator implements Annotator {
             } else {
                 if(children.length > 1) {
                     //The 2 here is used as the type definition node can have other nodes in its children, before the actual values
-                    if(ref.getChildren().length != children[1].getChildren().length + padding) {
-                        holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + (ref.getChildren().length - padding) + " found " + (children[1].getChildren().length)).setTextAttributes(HighlighterColors.BAD_CHARACTER);
+                    List<PsiElement> orderedFields = getOrderedFields(ref);
+                    if(orderedFields.size() != children[1].getChildren().length) {
+                        holder.createErrorAnnotation(element, "Invalid parameter count. Expected " + orderedFields.size() + " found " + children[1].getChildren().length).setTextAttributes(HighlighterColors.BAD_CHARACTER);
                     } else {
                         for (int i = 0; i < children[1].getChildren().length; i++) {
-                            checkFieldValidity(holder, children[1].getChildren()[i], ref.getChildren()[i + padding].getChildren()[0]);
+                            checkFieldValidity(holder, children[1].getChildren()[i], orderedFields.get(i).getChildren()[0]);
                         }
                     }
                 }
@@ -362,6 +362,25 @@ public class SchemaAnnotator implements Annotator {
             }
         }
         return out;
+    }
+
+    public static List<PsiElement> getOrderedFields(PsiElement obj) {
+        Map<Integer, PsiElement> elementMap = new HashMap<>();
+        int max = -1;
+        for (PsiElement child : obj.getChildren()) {
+            if(child.getNode().getElementType() == SchemaParser.FIELD_DEFINITION) {
+                int i = Integer.parseInt(child.getChildren()[2].getText());
+                max = Math.max(max, i + 1);
+                elementMap.put(i, child);
+            }
+        }
+        List<PsiElement> list = new LinkedList<>();
+        for (int i = 0; i < max; i++) {
+            if(elementMap.containsKey(i)) { //Should ways be true?
+                list.add(elementMap.get(i));
+            }
+        }
+        return list;
     }
 
 }

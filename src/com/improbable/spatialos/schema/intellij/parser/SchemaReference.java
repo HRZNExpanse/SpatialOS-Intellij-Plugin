@@ -5,8 +5,6 @@ import com.intellij.psi.PsiReferenceBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-
 public class SchemaReference extends PsiReferenceBase<PsiElement> {
 
     public SchemaReference(@NotNull PsiElement element, boolean soft) {
@@ -23,7 +21,7 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
             }
             return null;
         }
-        if(this.myElement.getNode().getElementType() == SchemaParser.ANNOTATION_TYPE_NAME) {
+        if(this.myElement.getNode().getElementType() == SchemaParser.TYPE_NAME_REFERENCE) {
             PsiElement type =  SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
             if(type != null) {
                 return type.getChildren()[1];
@@ -40,7 +38,9 @@ public class SchemaReference extends PsiReferenceBase<PsiElement> {
         if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_NEWINSTANCE_NAME) {
             return SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
         }
-        System.out.println(this.myElement);
+        if(this.myElement.getNode().getElementType() == SchemaParser.FIELD_ENUM_OR_INSTANCE) {
+            return SchemaAnnotator.resolveElement(this.myElement, this.myElement.getText());
+        }
         return null;
     }
 

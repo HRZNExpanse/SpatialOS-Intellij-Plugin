@@ -24,7 +24,7 @@ public class SchemaPsiElement extends ASTWrapperPsiElement implements PsiNameIde
         List<IElementType> accepted = Arrays.asList(
                 SchemaParser.FIELD_ENUM_OR_INSTANCE,
                 SchemaParser.FIELD_NEWINSTANCE_NAME,
-                SchemaParser.ANNOTATION_TYPE_NAME,
+                SchemaParser.TYPE_NAME_REFERENCE,
                 SchemaParser.FIELD_TYPE,
                 SchemaParser.FIELD_REFERNCE
         );//todo: move this to a field

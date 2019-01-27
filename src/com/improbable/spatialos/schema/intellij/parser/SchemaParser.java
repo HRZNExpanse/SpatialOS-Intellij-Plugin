@@ -63,7 +63,7 @@ public class SchemaParser implements PsiParser {
 
     public static final IElementType ANNOTATION_DEFINITION = new PartNode("Annotation Definition", SchemaAnnotator::highlightAnnotation);
     public static final IElementType ANNOTATION_QUALIFIER = new Node("Annotation Qualifier"); //TODO: rename
-    public static final IElementType ANNOTATION_TYPE_NAME = new Node("Annotation Type Name");
+    public static final IElementType TYPE_NAME_REFERENCE = new Node("Type Name Reference");
 
     public static final IElementType FIELD_ARRAY = new Node("Annotation Field Array");
 
@@ -478,7 +478,7 @@ public class SchemaParser implements PsiParser {
                 error(marker, ANNOTATION_DEFINITION, Construct.STATEMENT, "Expected type after '['.");
                 return;
             }
-            consumeTokenAs(ANNOTATION_TYPE_NAME);
+            consumeTokenAs(TYPE_NAME_REFERENCE);
 
             if(isToken(SchemaLexer.LPARENTHESES)) { //If the annotation has fields
                 if(builder.lookAhead(2) == SchemaLexer.EQUALS) { //fully-qualified names
@@ -659,7 +659,7 @@ public class SchemaParser implements PsiParser {
                 return;
             }
             String response = getIdentifier();
-            consumeTokenAs(TYPE_NAME);
+            consumeTokenAs(TYPE_NAME_REFERENCE);
             if (!isToken(SchemaLexer.IDENTIFIER)) {
                 error(marker, COMMAND_DEFINITION, Construct.STATEMENT,
                         "Expected command name after 'command %s'.", response);
@@ -679,7 +679,7 @@ public class SchemaParser implements PsiParser {
                 return;
             }
             String request = getIdentifier();
-            consumeTokenAs(TYPE_NAME);
+            consumeTokenAs(TYPE_NAME_REFERENCE);
             if (!isToken(SchemaLexer.RPARENTHESES)) {
                 error(marker, COMMAND_DEFINITION, Construct.STATEMENT,
                         "Expected ')' after 'command %s %s(%s'.", response, name, request);
