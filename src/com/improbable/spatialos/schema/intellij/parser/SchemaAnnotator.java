@@ -1,5 +1,6 @@
 package com.improbable.spatialos.schema.intellij.parser;
 
+import com.google.common.collect.Sets;
 import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
@@ -18,6 +19,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiManager;
 import com.twelvemonkeys.io.FileUtil;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.regex.Pattern;
@@ -385,53 +387,57 @@ public class SchemaAnnotator implements Annotator {
                 parent = parent.getParent();
             }
             if(parent != null) {
-                VirtualFile source = null;
-                Project project = element.getProject();
-                module:
+                Set<String> imports = Sets.newHashSet();
+                for (PsiElement child : element.getContainingFile().getChildren()) {
+                    if(child.getNode().getElementType() == SchemaParser.IMPORT_DEFINITION) {
+                        imports.add(child.getChildren()[1].getText());//String[] elements = .replace("\"", "").split("/");
+                    }
+                }
+
                 for (Module module : ModuleManager.getInstance(element.getProject()).getSortedModules()) {
                     for (VirtualFile contentRoot : ModuleRootManager.getInstance(module).getContentRoots()) {
                         if(contentRoot.getPresentableUrl().endsWith("\\schema")) {
-                            source = contentRoot;
-                            project = module.getProject();
-                            break module;
+                            PsiElement e = searchFolder(PsiManager.getInstance(module.getProject()).findDirectory(contentRoot), elementName, imports);
+                            if(e != null) {
+                                return e;
+                            }
                         }
                     }
                 }
-                if(source == null) { //Not recommended
-                    for (VirtualFile sourceRoot : ProjectRootManager.getInstance(element.getProject()).getContentSourceRoots()) {
-                        if(sourceRoot.getPresentableUrl().endsWith("\\schema")) {
-                            source = sourceRoot;
-                            break;
+                for (VirtualFile sourceRoot : ProjectRootManager.getInstance(element.getProject()).getContentSourceRoots()) {
+                    if(sourceRoot.getPresentableUrl().endsWith("\\schema")) {
+                        PsiElement e = searchFolder(PsiManager.getInstance(element.getProject()).findDirectory(sourceRoot), elementName, imports);
+                        if(e != null) {
+                            return e;
                         }
                     }
                 }
-                if(source != null) {
-                    PsiDirectory folder = PsiManager.getInstance(project).findDirectory(source);
-                    if(folder != null) {
-                        PsiDirectory reference = folder;
-                        for (PsiElement child : element.getContainingFile().getChildren()) {
-                            if(child.getNode().getElementType() == SchemaParser.IMPORT_DEFINITION) {
-                                String[] elements = child.getChildren()[1].getText().replace("\"", "").split("/");
-                                boolean donethrough = true;
-                                for (int i = 0; i < elements.length - 1; i++) {
-                                    if(reference == null) {
-                                        donethrough = false;
-                                        break;
-                                    }
-                                    reference = reference.findSubdirectory(elements[i]);
-                                }
-                                if(donethrough && reference != null) {
-                                    PsiFile file = reference.findFile(elements[elements.length - 1]);
-                                    if(file != null) {
-                                        for (PsiElement fileChild : file.getChildren()) {
-                                            if(fileChild.getNode().getElementType() == SchemaParser.PACKAGE_DEFINITION) {
-                                                String packname = fileChild.getChildren()[1].getText();
-                                                if(elementName.startsWith(packname)) {
-                                                    return resolveElement(fileChild, elementName.substring(packname.length() + 1), false);
-                                                }
-                                            }
-                                        }
-                                    }
+            }
+        }
+        return out;
+    }
+
+    public static PsiElement searchFolder(@Nullable PsiDirectory folder, String elementName, Set<String> imports) {
+        if(folder != null) {
+            for (String s : imports) {
+                String[] elements = s.replace("\"", "").split("/");
+                PsiDirectory reference = folder;
+                boolean donethrough = true;
+                for (int i = 0; i < elements.length - 1; i++) {
+                    if(reference == null) {
+                        donethrough = false;
+                        break;
+                    }
+                    reference = reference.findSubdirectory(elements[i]);
+                }
+                if(donethrough && reference != null) {
+                    PsiFile file = reference.findFile(elements[elements.length - 1]);
+                    if(file != null) {
+                        for (PsiElement fileChild : file.getChildren()) {
+                            if(fileChild.getNode().getElementType() == SchemaParser.PACKAGE_DEFINITION) {
+                                String packname = fileChild.getChildren()[1].getText();
+                                if(elementName.startsWith(packname)) {
+                                    return resolveElement(fileChild, elementName.substring(packname.length() + 1), false);
                                 }
                             }
                         }
@@ -439,7 +445,7 @@ public class SchemaAnnotator implements Annotator {
                 }
             }
         }
-        return out;
+        return null;
     }
 
     public static List<PsiElement> getOrderedFields(PsiElement obj) {

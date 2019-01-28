@@ -1,7 +1,6 @@
 package com.improbable.spatialos.schema.intellij.parser;
 
 import com.improbable.spatialos.schema.intellij.SchemaFileType;
-import com.intellij.lang.ASTNode;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.ElementManipulator;
 import com.intellij.psi.PsiElement;
@@ -10,8 +9,6 @@ import com.intellij.util.Function;
 import com.intellij.util.IncorrectOperationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.Arrays;
 
 public class SchemaElementManipulator implements ElementManipulator<PsiElement> {
 
@@ -29,7 +26,6 @@ public class SchemaElementManipulator implements ElementManipulator<PsiElement> 
     }
 
     private static String getPrefix(@NotNull PsiElement element) {
-        System.out.println(element.getText());
         PsiElement resolved = SchemaAnnotator.resolveElement(element, element.getText());
         if(resolved != null) {
             if(resolved.getContainingFile() == element.getContainingFile()) { //Same file
