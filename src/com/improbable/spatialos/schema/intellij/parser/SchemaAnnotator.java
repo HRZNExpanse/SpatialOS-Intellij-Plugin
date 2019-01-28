@@ -4,13 +4,21 @@ import com.intellij.lang.annotation.AnnotationHolder;
 import com.intellij.lang.annotation.Annotator;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;
+import com.intellij.openapi.module.Module;
+import com.intellij.openapi.module.ModuleManager;
+import com.intellij.openapi.module.ModuleUtil;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ModuleRootManager;
+import com.intellij.openapi.roots.ProjectRootManager;
 import com.intellij.openapi.util.TextRange;
+import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiDirectory;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.psi.PsiManager;
+import com.twelvemonkeys.io.FileUtil;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -369,18 +377,36 @@ public class SchemaAnnotator implements Annotator {
         }
 
         if(out == null && searchImports) { //Search through other dirs
-            String path = element.getProject().getBasePath();
-            if(path != null) {
-                File base = new File(path);
-                PsiDirectory parent = element.getContainingFile().getParent();
-                while (parent != null) { //Locate the root element
-                    if(new File(parent.getVirtualFile().getPresentableUrl()).getPath().equals(base.getPath())) { //disgusting
-                        break;
-                    }
-                    parent = parent.getParent();
+            PsiDirectory parent = element.getContainingFile().getParent();
+            while (parent != null) { //Locate the absolute root element
+                if(parent.getParent() == null) {
+                    break;
                 }
-                if(parent != null) {
-                    PsiDirectory folder = parent.findSubdirectory("schema");
+                parent = parent.getParent();
+            }
+            if(parent != null) {
+                VirtualFile source = null;
+                Project project = element.getProject();
+                module:
+                for (Module module : ModuleManager.getInstance(element.getProject()).getSortedModules()) {
+                    for (VirtualFile contentRoot : ModuleRootManager.getInstance(module).getContentRoots()) {
+                        if(contentRoot.getPresentableUrl().endsWith("\\schema")) {
+                            source = contentRoot;
+                            project = module.getProject();
+                            break module;
+                        }
+                    }
+                }
+                if(source == null) { //Not recommended
+                    for (VirtualFile sourceRoot : ProjectRootManager.getInstance(element.getProject()).getContentSourceRoots()) {
+                        if(sourceRoot.getPresentableUrl().endsWith("\\schema")) {
+                            source = sourceRoot;
+                            break;
+                        }
+                    }
+                }
+                if(source != null) {
+                    PsiDirectory folder = PsiManager.getInstance(project).findDirectory(source);
                     if(folder != null) {
                         PsiDirectory reference = folder;
                         for (PsiElement child : element.getContainingFile().getChildren()) {
