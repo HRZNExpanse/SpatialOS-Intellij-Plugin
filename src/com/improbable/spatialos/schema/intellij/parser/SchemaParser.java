@@ -226,8 +226,23 @@ public class SchemaParser implements PsiParser {
             PsiBuilder.Marker typeMarker = builder.mark();
             String name = getIdentifier();
             String rawName = name;
+            boolean isTransient = "transient".equals(rawName);
+
+            if(isTransient) {
+                consumeTokenAs(KEYWORD);
+                typeMarker.drop();
+                rawName = name = getIdentifier();
+                typeMarker = builder.mark();
+            }
+
+
             consumeTokenAs(TYPE_NAME);
             if (!isToken(SchemaLexer.LANGLE)) {
+                if(isTransient) {
+                    typeMarker.drop();
+                    error(marker, FIELD_DEFINITION, Construct.STATEMENT, "Cannot use transient on non collection", name);
+                    return null;
+                }
                 typeMarker.done(FIELD_TYPE);
                 return name;
             }
@@ -244,8 +259,6 @@ public class SchemaParser implements PsiParser {
                     numParams = 2;
                     break;
                 case "option":
-                    numParams = 1;
-                    break;
                 case "list":
                     numParams = 1;
                     break;
