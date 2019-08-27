@@ -54,6 +54,9 @@ public class SchemaParserDefinition implements ParserDefinition {
 
     @Override
     public @NotNull PsiElement createElement(ASTNode astNode) {
+        if(astNode.getElementType() == SchemaParser.DEFINITION_NAME || astNode.getElementType() == SchemaParser.FIELD_NAME) {
+            return new SchemaPsiRenameableElement(astNode);
+        }
         return new SchemaPsiElement(astNode);
     }
 
