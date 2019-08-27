@@ -32,6 +32,10 @@ public class SchemaAnnotator implements Annotator {
             "fixed64", "sfixed32", "sfixed64", "bool"
     );
 
+    private static final List<String> STANDARD_LIBRARY = Arrays.asList(
+            "Position", "Coordinates", "WorkerAttributeSet", "WorkerRequirementSet", "EntityAcl", "Persistence", "Metadata", "Interest"
+    );
+
     public static final Pattern BOOL = Pattern.compile("(?i)(?:true|false)");
     public static final Pattern INTEGER = Pattern.compile("\\d+");
     public static final Pattern DECIMAL = Pattern.compile("\\d+\\.\\d+");
@@ -72,7 +76,7 @@ public class SchemaAnnotator implements Annotator {
         } else {
             String text = element.getText();
             PsiElement ref = resolveElement(element, text);
-            if(ref == null && !text.equals("EntityId")) {
+            if(ref == null && !isImprobableElement(element, text)) {
                 holder.createErrorAnnotation(element, "Unable to find type " + element.getText());
             }
         }
@@ -167,7 +171,7 @@ public class SchemaAnnotator implements Annotator {
         PsiElement[] children = element.getChildren();
         if(children.length > 0) {
             PsiElement ref = resolveElement(element, children[0].getText());
-            if(ref == null) {
+            if(ref == null && !isImprobableElement(element, children[0].getText())) {
                 holder.createErrorAnnotation(element, "Unable to find type " + children[0].getText()).setTextAttributes(HighlighterColors.BAD_CHARACTER);
             } else {
                 if(children.length > 1) {
@@ -273,7 +277,7 @@ public class SchemaAnnotator implements Annotator {
                             }
                         } else { //New instance
                             PsiElement[] children = fieldElement.getChildren();
-                            if(children.length > 0) {;
+                            if(children.length > 0) {
                                 if(resolveElement(fieldElement, children[0].getText()) != resolveElement(actualField, type)) {
                                     holder.createErrorAnnotation(fieldElement, "Expected '" + actual + "' found '" + children[0].getText() + "'");
                                 }
@@ -307,6 +311,20 @@ public class SchemaAnnotator implements Annotator {
             }
         }
     }
+
+
+    public static boolean isImprobableElement(PsiElement element, String text) {
+        return text.equals("EntityId") || (hasStandardLibraryImport(element) && text.startsWith("improbable.") && STANDARD_LIBRARY.contains(text.substring(11))); //substring 11 is to get the element name
+    }
+
+    public static boolean hasStandardLibraryImport(PsiElement element) {
+        return Arrays.stream(element.getContainingFile().getChildren())
+                .anyMatch(child ->
+                        child.getNode().getElementType() == SchemaParser.IMPORT_DEFINITION &&
+                                child.getChildren()[1].getText().equals("\"improbable/standard_library.schema\"")
+                );
+    }
+
 
     public static PsiElement resolveElement(@NotNull PsiElement element, String elementName) {
         return resolveElement(element, elementName, true);
